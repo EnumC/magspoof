@@ -41,7 +41,6 @@ const int sublen[] = {
 const int bitlen[] = {
   7, 5, 5 };
 
-unsigned int curTrack = 0;
 int dir;
 
 void setup()
@@ -102,10 +101,10 @@ void reverseTrack(int track)
 }
 
 // plays out a full track, calculating CRCs and LRC
-void playTrack(int track)
+void playTracks()
 {
   int tmp, crc, lrc = 0;
-  track--; // index 0
+  track = 0; // Always play track 1 first
   dir = 0;
 
   // enable H-bridge and LED
@@ -115,7 +114,6 @@ void playTrack(int track)
   for (int i = 0; i < 25; i++)
     playBit(0);
 
-  //
   for (int i = 0; tracks[track][i] != '\0'; i++)
   {
     crc = 1;
@@ -142,20 +140,15 @@ void playTrack(int track)
   }
   playBit(crc);
 
-  // if track 1, play 2nd track in reverse (like swiping back?)
-  if (track == 0)
-  {
-    // if track 1, also play track 2 in reverse
-    // zeros in between
-    for (int i = 0; i < BETWEEN_ZERO; i++)
-      playBit(0);
-
-    // send second track in reverse
-    reverseTrack(2);
-  }
+  //play 2nd track in reverse (like swiping back?)
+  //play zeros in between tracks
+  for (int i = 0; i < BETWEEN_ZERO; i++)
+    playBit(0);
+  // send second track in reverse
+  reverseTrack(2);
 
   // finish with 0's
-  for (int i = 0; i < 5 * 5; i++)
+  for (int i = 0; i < 25; i++)
     playBit(0);
 
   digitalWrite(PIN_A, LOW);
@@ -232,25 +225,11 @@ void sleep()
   sei();                                  // Enable interrupts
 }
 
-// XXX move playtrack in here?
 ISR(PCINT0_vect) {
-  /*  noInterrupts();
-   while (digitalRead(BUTTON_PIN) == LOW);
-
-   delay(50);
-   while (digitalRead(BUTTON_PIN) == LOW);
-   playTrack(1 + (curTrack++ % 2));
-   delay(400);
-
-   interrupts();*/
-
 }
 
 void loop()
 {
-
-  //for(int i=0;i<10;i++){playTrack(1+(curTrack++%2));delay(3000);}
-
   sleep();
 
   noInterrupts();
@@ -258,9 +237,8 @@ void loop()
 
   delay(50);
   while (digitalRead(BUTTON_PIN) == LOW);
-  playTrack(1 + (curTrack++ % 2));
+  playTracks();
   delay(400);
 
   interrupts();
-  //playTrack(1 + (curTrack++ % 2));
 }
