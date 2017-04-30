@@ -24,7 +24,7 @@
 #define BUTTON_PIN 2
 #define CLOCK_US 200
 
-#define BETWEEN_ZERO 53 // 53 zeros between track1 & 2
+#define PADDING 25 // number of 0's before and after tracks
 
 #define TRACKS 2
 
@@ -34,13 +34,17 @@ const char* tracks[] = {
 ";123456781234567=YYMMSSSDDDDDDDDDDDDDD?\0" // Track 2
 };
 
-char revTrack[41];
+char revTrack1[100];
+char revTrack2[41];
+char* revTracks[] = { revTrack1, revTrack2 };
+
 
 const int sublen[] = {
   32, 48, 48 };
 const int bitlen[] = {
   7, 5, 5 };
 
+unsigned int curTrack = 0;
 int dir;
 
 void setup()
@@ -52,8 +56,7 @@ void setup()
 
   // blink to show we started up
   blink(ENABLE_PIN, 200, 3);
-
-  // store reverse track 2 to play later
+  storeRevTrack(1);
   storeRevTrack(2);
 }
 
@@ -86,32 +89,42 @@ void playBit(int sendBit)
 
 }
 
-// when reversing
-void reverseTrack(int track)
+//plays tracks in different ways for maximum compatibility among magstripe readers
+void playTracks()
 {
-  int i = 0;
-  track--; // index 0
-  dir = 0;
-
-  while (revTrack[i++] != '\0');
-  i--;
-  while (i--)
-    for (int j = bitlen[track]-1; j >= 0; j--)
-      playBit((revTrack[i] >> j) & 1);
+  curTrack++;
+  if((curTrack % 4)==1)
+  {
+    //forward then reverse swipe
+    playTrack(1);
+    reverseTrack(2);
+  } else if ((curTrack % 4)==2){
+    //forward consecutive swipes
+    playTrack(1);
+    playTrack(2);
+  } else if ((curTrack % 4)==3) {
+    //reverse then forward swipe
+    reverseTrack(1);
+	playTrack(2);
+  } else {
+    //reverse consecutive swipes
+    reverseTrack(1);
+	reverseTrack(2);
+  }
 }
 
 // plays out a full track, calculating CRCs and LRC
-void playTracks()
+void playTrack(int track)
 {
   int tmp, crc, lrc = 0;
-  int track = 0; // Always play track 1 first
+  track--; // index 0
   dir = 0;
 
   // enable H-bridge and LED
   digitalWrite(ENABLE_PIN, HIGH);
 
   // First put out a bunch of leading zeros.
-  for (int i = 0; i < 25; i++)
+  for (int i = 0; i < PADDING; i++)
     playBit(0);
 
   for (int i = 0; tracks[track][i] != '\0'; i++)
@@ -140,24 +153,42 @@ void playTracks()
   }
   playBit(crc);
 
-  //play 2nd track in reverse (like swiping back?)
-  //play zeros in between tracks
-  for (int i = 0; i < BETWEEN_ZERO; i++)
-    playBit(0);
-  // send second track in reverse
-  reverseTrack(2);
-
   // finish with 0's
-  for (int i = 0; i < 25; i++)
+  for (int i = 0; i < PADDING; i++)
     playBit(0);
 
   digitalWrite(PIN_A, LOW);
   digitalWrite(PIN_B, LOW);
   digitalWrite(ENABLE_PIN, LOW);
-
 }
 
+// when reversing
+void reverseTrack(int track)
+{
+  int i = 0;
+  track--; // index 0
+  dir = 0;
 
+  digitalWrite(ENABLE_PIN, HIGH);
+
+  // First put out a bunch of leading zeros.
+  for (int i = 0; i < PADDING; i++)
+    playBit(0);
+  
+  while (revTracks[track][i++] != '\0');
+  i--;
+  while (i--)
+    for (int j = bitlen[track]-1; j >= 0; j--)
+      playBit((revTracks[track][i] >> j) & 1);
+    
+  // finish with 0's
+  for (int i = 0; i < PADDING; i++)
+    playBit(0);
+
+  digitalWrite(PIN_A, LOW);
+  digitalWrite(PIN_B, LOW);
+  digitalWrite(ENABLE_PIN, LOW);
+}
 
 // stores track for reverse usage later
 void storeRevTrack(int track)
@@ -176,13 +207,13 @@ void storeRevTrack(int track)
       crc ^= tmp & 1;
       lrc ^= (tmp & 1) << j;
       tmp & 1 ?
-        (revTrack[i] |= 1 << j) :
-        (revTrack[i] &= ~(1 << j));
+        (revTracks[track][i] |= 1 << j) :
+        (revTracks[track][i] &= ~(1 << j));
       tmp >>= 1;
     }
     crc ?
-      (revTrack[i] |= 1 << 4) :
-      (revTrack[i] &= ~(1 << 4));
+      (revTracks[track][i] |= 1 << 4) :
+      (revTracks[track][i] &= ~(1 << 4));
   }
 
   // finish calculating and send last "byte" (LRC)
@@ -192,16 +223,16 @@ void storeRevTrack(int track)
   {
     crc ^= tmp & 1;
     tmp & 1 ?
-      (revTrack[i] |= 1 << j) :
-      (revTrack[i] &= ~(1 << j));
+      (revTracks[track][i] |= 1 << j) :
+      (revTracks[track][i] &= ~(1 << j));
     tmp >>= 1;
   }
   crc ?
-    (revTrack[i] |= 1 << 4) :
-    (revTrack[i] &= ~(1 << 4));
+    (revTracks[track][i] |= 1 << 4) :
+    (revTracks[track][i] &= ~(1 << 4));
 
   i++;
-  revTrack[i] = '\0';
+  revTracks[track][i] = '\0';
 }
 
 void sleep()
