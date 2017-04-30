@@ -266,7 +266,7 @@ void loop()
   noInterrupts();
   while (digitalRead(BUTTON_PIN) == LOW);
 
-  delay(50);
+  delay(100);
   while (digitalRead(BUTTON_PIN) == LOW);
   playTracks();
   delay(400);
