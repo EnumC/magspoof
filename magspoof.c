@@ -34,7 +34,7 @@ const char* tracks[] = {
 ";123456781234567=YYMMSSSDDDDDDDDDDDDDD?\0" // Track 2
 };
 
-char revTrack1[100];
+char revTrack1[80];
 char revTrack2[41];
 char* revTracks[] = { revTrack1, revTrack2 };
 
