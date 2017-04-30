@@ -105,11 +105,11 @@ void playTracks()
   } else if ((curTrack % 4)==3) {
     //reverse then forward swipe
     reverseTrack(1);
-	playTrack(2);
+    playTrack(2);
   } else {
     //reverse consecutive swipes
     reverseTrack(1);
-	reverseTrack(2);
+    reverseTrack(2);
   }
 }
 
