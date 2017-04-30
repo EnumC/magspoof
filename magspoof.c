@@ -104,7 +104,7 @@ void reverseTrack(int track)
 void playTracks()
 {
   int tmp, crc, lrc = 0;
-  track = 0; // Always play track 1 first
+  int track = 0; // Always play track 1 first
   dir = 0;
 
   // enable H-bridge and LED
