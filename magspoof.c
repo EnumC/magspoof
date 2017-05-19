@@ -38,6 +38,8 @@ char revTrack[41];
 
 const int sublen[] = {
   32, 48, 48 };
+  
+  // How many bits are in each character for each track
 const int bitlen[] = {
   7, 5, 5 };
 
