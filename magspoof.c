@@ -12,6 +12,7 @@
  * - Supports all three magnetic stripe tracks, and even supports Track 1+2 simultaneously
  * - Easy to build using Arduino or ATtiny
  *
+ * http://www.instructables.com/id/Turn-your-Arduino-into-a-Magnetic-Card-Reader/
  */
 
 #include <avr/sleep.h>
@@ -22,6 +23,9 @@
 #define ENABLE_PIN 3 // also green LED
 #define SWAP_PIN 4 // unused
 #define BUTTON_PIN 2
+
+// Delay, corresponds to 5 kHz at 200 us
+// Try lowering to 10-60 us according to patent?
 #define CLOCK_US 200
 
 #define BETWEEN_ZERO 53 // 53 zeros between track1 & 2
@@ -34,12 +38,21 @@ const char* tracks[] = {
 ";123456781234567=YYMMSSSDDDDDDDDDDDDDD?\0" // Track 2
 };
 
+// Create am array for storing the reverse of track 2
 char revTrack[41];
 
+/* Track 1 is written in DEC SIXBIT plus odd parity (an odd number of 1's in each character)
+For our purposes, we can convert from ASCII to this code by subtracting 32
+See: https://en.wikipedia.org/wiki/Six-bit_character_code#DEC_six-bit_code
+
+ Track 2 is written with 4 data bits + 1 parity bit
+These simply map to the ASCII range 0x30 to 0x3f (in decimal: 48 to 63)
+*/
 const int sublen[] = {
   32, 48, 48 };
   
-  // How many bits are in each character for each track
+
+// How many bits are in each character for each track
 const int bitlen[] = {
   7, 5, 5 };
 
@@ -60,6 +73,7 @@ void setup()
   storeRevTrack(2);
 }
 
+// Blink the LED
 void blink(int pin, int msdelay, int times)
 {
   for (int i = 0; i < times; i++)
@@ -74,6 +88,7 @@ void blink(int pin, int msdelay, int times)
 // send a single bit out
 void playBit(int sendBit)
 {
+	// Need to make the output pins on the driver either high or low
   dir ^= 1;
   digitalWrite(PIN_A, dir);
   digitalWrite(PIN_B, !dir);
@@ -117,7 +132,7 @@ void playTrack(int track)
   for (int i = 0; i < 25; i++)
     playBit(0);
 
-  //
+  // Play until we get to the end character
   for (int i = 0; tracks[track][i] != '\0'; i++)
   {
     crc = 1;
