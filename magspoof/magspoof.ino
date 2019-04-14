@@ -12,6 +12,13 @@
  * - Supports all three magnetic stripe tracks, and even supports Track 1+2 simultaneously
  * - Easy to build using Arduino or ATtiny
  *
+ * SETUP INSTRUCTIONS:
+ * Attiny85 pinout: https://hackster.imgix.net/uploads/image/file/50820/ATtiny45-85.png?auto=compress%2Cformat&w=680&h=510&fit=max
+ * Add board manager URL:  
+ * 
+ * I personally decided to use a Digispark board as it will be much easier to reprogram and test.
+ * Install "Digistump AVR Boards" in Board Manager
+ * Select Digistump (Default) in boards.
  */
 
 #include <avr/sleep.h>
