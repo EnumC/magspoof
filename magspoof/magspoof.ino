@@ -12,13 +12,25 @@
  * - Supports all three magnetic stripe tracks, and even supports Track 1+2 simultaneously
  * - Easy to build using Arduino or ATtiny
  *
- * SETUP INSTRUCTIONS:
+ * Resources:
  * Attiny85 pinout: https://hackster.imgix.net/uploads/image/file/50820/ATtiny45-85.png?auto=compress%2Cformat&w=680&h=510&fit=max
  * Add board manager URL:  
  * 
  * I personally decided to use a Digispark board as it will be much easier to reprogram and test.
+ * DRV8833 as the motor controller, and repurposed a wireless chargine receiver's coil. 
+ * Testing is done via a square POS.
+ * 
+ * DISCLAIMER:
+ * I personally thought this could be a fun project as a Samsung MST alternative and
+ * to consolidate some of my cards together into one small package.
+ * No matter what reason that led you here, PLEASE don't harm others for your own 
+ * personal gain using this project. 
+ * 
+ * SETUP INSTRUCTIONS:
  * Install "Digistump AVR Boards" in Board Manager
  * Select Digistump (Default) in boards.
+ * Follow samyk's schematic shown here: https://raw.githubusercontent.com/samyk/magspoof/master/magspoof-schematic-dip.png
+ * 
  */
 
 #include <avr/sleep.h>
@@ -38,11 +50,23 @@
 
 #define TRACKS 2
 
-// consts get stored in flash as we don't adjust them
-const char* tracks[] = {
+// This 2D array holds multiple cards' tracks. It is a constant as it would not be changed during runtime. 
+const char* cards[][2] = {
+//  Card 1
+  {"%B123456781234567^LASTNAME/FIRST^YYMMSSSDDDDDDDDDDDDDDDDDDDDDDDDD?\0", // Track 1
+  ";123456781234567=YYMMSSSDDDDDDDDDDDDDD?\0"}, // Track 2
+//  Card 2
+  {"%B123456781234567^LASTNAME/FIRST^YYMMSSSDDDDDDDDDDDDDDDDDDDDDDDDD?\0", // Track 1
+  ";123456781234567=YYMMSSSDDDDDDDDDDDDDD?\0"}
+//  Add more cards here.
+};
+
+// tracks char array holds the currently selected track. 
+char* tracks[2] = {
 "%B123456781234567^LASTNAME/FIRST^YYMMSSSDDDDDDDDDDDDDDDDDDDDDDDDD?\0", // Track 1
 ";123456781234567=YYMMSSSDDDDDDDDDDDDDD?\0" // Track 2
 };
+
 
 char revTrack1[80];
 char revTrack2[41];
@@ -77,8 +101,12 @@ void setup()
   pinMode(ENABLE_PIN, OUTPUT);
   pinMode(BUTTON_PIN, INPUT_PULLUP);
 
+  Serial.begin(9600);
   // blink to show we started up
   blink(ENABLE_PIN, 200, 3);
+
+  // switch current card to index 0.
+  switchCard(0);
   storeRevTrack(1);
   storeRevTrack(2);
 }
@@ -291,6 +319,14 @@ void storeRevTrack(int track)
   revTracks[track][i] = '\0';
 }
 
+void switchCard(int cardNum) {
+  memcpy(tracks, cards[cardNum], sizeof(cards[cardNum]));
+  // copy cards[cardNum] -> tracks.   
+
+  Serial.println();
+  Serial.print("Current selected card: ");
+  Serial.println(tracks[0]);
+}
 void sleep()
 {
   GIMSK |= _BV(PCIE);                     // Enable Pin Change Interrupts
