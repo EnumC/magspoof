@@ -29,6 +29,9 @@
 #define ENABLE_PIN 3 // also green LED
 #define SWAP_PIN 4 // unused
 #define BUTTON_PIN 2
+
+// Delay, corresponds to 5 kHz at 200 us
+// Try lowering to 10-60 us according to patent?
 #define CLOCK_US 200
 
 #define PADDING 25 // number of 0's before and after tracks
@@ -49,8 +52,18 @@ char* revTracks[] = { revTrack1, revTrack2 };
 // service code to make requirements more lax and disable chip-and-PIN (third digit)
 const char *sc_rep = {"101"};
 
+/* Track 1 is written in DEC SIXBIT plus odd parity (an odd number of 1's in each character)
+For our purposes, we can convert from ASCII to this code by subtracting 32
+See: https://en.wikipedia.org/wiki/Six-bit_character_code#DEC_six-bit_code
+
+ Track 2 is written with 4 data bits + 1 parity bit
+These simply map to the ASCII range 0x30 to 0x3f (in decimal: 48 to 63)
+*/
 const int sublen[] = {
   32, 48, 48 };
+  
+
+// How many bits are in each character for each track
 const int bitlen[] = {
   7, 5, 5 };
 
@@ -70,6 +83,7 @@ void setup()
   storeRevTrack(2);
 }
 
+// Blink the LED
 void blink(int pin, int msdelay, int times)
 {
   for (int i = 0; i < times; i++)
@@ -84,6 +98,7 @@ void blink(int pin, int msdelay, int times)
 // send a single bit out
 void playBit(int sendBit)
 {
+	// Need to make the output pins on the driver either high or low
   dir ^= 1;
   digitalWrite(PIN_A, dir);
   digitalWrite(PIN_B, !dir);
@@ -137,6 +152,7 @@ void playTrack(int track)
   for (int i = 0; i < PADDING; i++)
     playBit(0);
 
+  // Play until we get to the end character
   for (int i = 0; tracks[track][i] != '\0'; i++)
   {
     crc = 1;
